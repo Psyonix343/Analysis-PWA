@@ -186,8 +186,6 @@
             margin-top: -10px;
         }
 
-        .mobile-controls-wrapper { display: none; }
-
         #tooltip {
             position: absolute;
             display: none;
@@ -230,16 +228,17 @@
                 height: auto;
             }
             .sidebar {
-                display: none;
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+                box-sizing: border-box;
+                overflow-y: visible;
+                height: auto;
+                padding: 10px;
             }
             .chart-wrapper {
                 height: 60vh;
                 min-height: 400px;
-            }
-            .mobile-controls-wrapper {
-                display: block;
-                padding: 10px;
-                background-color: var(--panel-color);
             }
             #chart-controls {
                 top: 10px;
@@ -256,6 +255,22 @@
 </head>
 <body>
     <div class="main-container">
+        <div class="chart-wrapper">
+            <div id="chart-container"></div>
+            <div id="chart-controls">
+                <span id="coin-symbol">AVAX / USDC.e</span>
+                <div class="form-group"><label for="timeframe-select">History</label><select id="timeframe-select"><option value="7">7 Days</option><option value="10">10 Days</option><option value="30" selected>30 Days</option></select></div>
+                <div class="form-group"><label for="interval-select">Interval</label><select id="interval-select"><option value="5m">5m</option><option value="15m" selected>15m</option><option value="1h">1h</option><option value="4h">4h</option><option value="1d">1d</option></select></div>
+            </div>
+            <div id="refresh-btn-container" title="Refresh Chart Data">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M464 16c-17.67 0-32 14.33-32 32v74.09C392.1 66.52 327.4 32 256 32 132.3 32 32 132.3 32 256s100.3 224 224 224c98.08 0 182.3-62.43 211.9-148.8 4.276-12.22-1.921-25.53-14.14-29.8-12.22-4.275-25.53 1.922-29.8 14.14C402.3 392.8 335.3 448 256 448c-106.1 0-192-85.9-192-192s85.9-192 192-192c51.87 0 98.74 20.67 132.7 54.59V160c0 17.67 14.33 32 32 32s32-14.33 32-32V48c0-17.67-14.33-32-32-32z"/></svg>
+            </div>
+            <div id="focus-latest-btn" title="Focus on Latest Candle">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><circle cx="12" cy="12" r="8"></circle></svg>
+            </div>
+            <div id="loader">Loading...</div>
+            <div id="tooltip"></div>
+        </div>
         <div class="sidebar">
              <div data-panel="live-signal">
                 <h2 class="collapsible-header">Live Signal Analysis</h2>
@@ -314,25 +329,6 @@
                 </div>
             </div>
         </div>
-        <div class="chart-wrapper">
-            <div id="chart-container"></div>
-            <div id="chart-controls">
-                <span id="coin-symbol">AVAX / USDC.e</span>
-                <div class="form-group"><label for="timeframe-select">History</label><select id="timeframe-select"><option value="7">7 Days</option><option value="10">10 Days</option><option value="30" selected>30 Days</option></select></div>
-                <div class="form-group"><label for="interval-select">Interval</label><select id="interval-select"><option value="5m">5m</option><option value="15m" selected>15m</option><option value="1h">1h</option><option value="4h">4h</option><option value="1d">1d</option></select></div>
-            </div>
-            <div id="refresh-btn-container" title="Refresh Chart Data">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M464 16c-17.67 0-32 14.33-32 32v74.09C392.1 66.52 327.4 32 256 32 132.3 32 32 132.3 32 256s100.3 224 224 224c98.08 0 182.3-62.43 211.9-148.8 4.276-12.22-1.921-25.53-14.14-29.8-12.22-4.275-25.53 1.922-29.8 14.14C402.3 392.8 335.3 448 256 448c-106.1 0-192-85.9-192-192s85.9-192 192-192c51.87 0 98.74 20.67 132.7 54.59V160c0 17.67 14.33 32 32 32s32-14.33 32-32V48c0-17.67-14.33-32-32-32z"/></svg>
-            </div>
-            <div id="focus-latest-btn" title="Focus on Latest Candle">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><circle cx="12" cy="12" r="8"></circle></svg>
-            </div>
-            <div id="loader">Loading...</div>
-            <div id="tooltip"></div>
-        </div>
-    </div>
-    <div class="mobile-controls-wrapper">
-        <!-- Content will be dynamically cloned here -->
     </div>
 
     <script>
@@ -510,151 +506,148 @@
         function getMtfContext(data15m, data4h) { if (!data15m.length || !data4h.length) return { m15: 'Unknown', h4: 'Unknown' }; const getContext = (data) => { const { k, d } = calculateStochRSI(data.map(c => c.close)); const lastK = k[k.length - 1]; const lastD = d[d.length - 1]; if (lastK === undefined || lastD === undefined) return 'Neutral'; if (lastK > lastD) return 'Bullish'; if (lastK < lastD) return 'Bearish'; return 'Neutral'; }; return { m15: getContext(data15m), h4: getContext(data4h) }; }
         
         function updateLastSignalUI() {
-            document.querySelectorAll('[data-panel="last-signal"] #last-signal-container').forEach(container => {
-                if (lastSignalFired) {
-                    const signalClass = lastSignalFired.type === 'BUY' ? 'profit' : 'loss';
-                    const timeString = new Date(lastSignalFired.time * 1000).toLocaleTimeString('en-AU', { timeZone: 'Australia/Sydney', hour: '2-digit', minute: '2-digit' });
-                    container.innerHTML = `
-                        <div style="margin-bottom: 5px;">
-                            <strong class="${signalClass}">${lastSignalFired.type}</strong> @ ${lastSignalFired.price.toFixed(4)}
-                            <span style="font-size: 11px; color: var(--text-secondary-color);">${timeString}</span>
-                        </div>
-                        <div style="font-size: 12px; color: var(--text-secondary-color); font-style: italic;">"${lastSignalFired.reason}"</div>
-                    `;
-                } else {
-                    container.innerHTML = 'No signals fired this session.';
-                }
-            });
+            const container = document.getElementById('last-signal-container');
+            if (lastSignalFired) {
+                const signalClass = lastSignalFired.type === 'BUY' ? 'profit' : 'loss';
+                const timeString = new Date(lastSignalFired.time * 1000).toLocaleTimeString('en-AU', { timeZone: 'Australia/Sydney', hour: '2-digit', minute: '2-digit' });
+                container.innerHTML = `
+                    <div style="margin-bottom: 5px;">
+                        <strong class="${signalClass}">${lastSignalFired.type}</strong> @ ${lastSignalFired.price.toFixed(4)}
+                        <span style="font-size: 11px; color: var(--text-secondary-color);">${timeString}</span>
+                    </div>
+                    <div style="font-size: 12px; color: var(--text-secondary-color); font-style: italic;">"${lastSignalFired.reason}"</div>
+                `;
+            } else {
+                container.innerHTML = 'No signals fired this session.';
+            }
         }
 
         function updateLiveVerdict(data, params, mtfContext) {
-            document.querySelectorAll('[data-panel="live-signal"]').forEach(panel => {
-                const primarySignalEl = panel.querySelector('#primary-signal');
-                const detailsEl = panel.querySelector('#live-signal-details');
-                if (!data || data.length < 2 || !params || Object.keys(params).length === 0) {
-                    primarySignalEl.innerHTML = 'Awaiting data...';
-                    detailsEl.innerHTML = '';
-                    return;
+            const primarySignalEl = document.getElementById('primary-signal');
+            const detailsEl = document.getElementById('live-signal-details');
+            if (!data || data.length < 2 || !params || Object.keys(params).length === 0) {
+                primarySignalEl.innerHTML = 'Awaiting data...';
+                detailsEl.innerHTML = '';
+                return;
+            }
+            const prices = data.map(d => d.close);
+            const lastPrice = prices[prices.length - 1];
+            
+            const lastMainChartCandle = filteredChartData[filteredChartData.length - 1];
+            if (!lastMainChartCandle) return;
+            const markerTime = lastMainChartCandle.time;
+
+            let primary = { text: 'Initializing...', class: '' };
+            let ltfStatus = { text: 'NEUTRAL', class: 'neutral' };
+            const { k: stochK, d: stochD } = calculateStochRSI(prices, 14);
+            const [lK, pLK, lD, pLD] = [stochK.slice(-1)[0], stochK.slice(-2)[0], stochD.slice(-1)[0], stochD.slice(-2)[0]];
+            const divergence = detectDivergence(data, stochK);
+            let divergenceStatus = { text: 'NONE', class: 'neutral' };
+            if (divergence.bullish) divergenceStatus = { text: 'BULLISH', class: 'bullish' };
+            if (divergence.bearish) divergenceStatus = { text: 'BEARISH', class: 'bearish' };
+            
+            if ([lK, pLK, lD, pLD].every(v => typeof v === 'number')) {
+                const isCrossoverBuy = lK > lD && pLK <= pLD && lD < params.buyLevel;
+                const isCrossoverSell = lK < lD && pLK >= pLD && lD > params.sellLevel;
+                const useDivergence = document.getElementById('detect-divergence').checked;
+                const isBuySignal = isCrossoverBuy || (useDivergence && divergence.bullish);
+                const isSellSignal = isCrossoverSell || (useDivergence && divergence.bearish);
+                
+                if (lK > lD) ltfStatus = { text: 'BULLISH', class: 'bullish'};
+                if (lK < lD) ltfStatus = { text: 'BEARISH', class: 'bearish'};
+
+                let isHighConfirmation = false;
+                if (isBuySignal && divergence.bullish && ltfStatus.text === 'BULLISH' && mtfContext.h4 === 'Bullish') {
+                    isHighConfirmation = true;
                 }
-                const prices = data.map(d => d.close);
-                const lastPrice = prices[prices.length - 1];
-                
-                const lastMainChartCandle = filteredChartData[filteredChartData.length - 1];
-                if (!lastMainChartCandle) return;
-                const markerTime = lastMainChartCandle.time;
+                if (isSellSignal && divergence.bearish && ltfStatus.text === 'BEARISH' && mtfContext.h4 === 'Bearish') {
+                    isHighConfirmation = true;
+                }
 
-                let primary = { text: 'Initializing...', class: '' };
-                let ltfStatus = { text: 'NEUTRAL', class: 'neutral' };
-                const { k: stochK, d: stochD } = calculateStochRSI(prices, 14);
-                const [lK, pLK, lD, pLD] = [stochK.slice(-1)[0], stochK.slice(-2)[0], stochD.slice(-1)[0], stochD.slice(-2)[0]];
-                const divergence = detectDivergence(data, stochK);
-                let divergenceStatus = { text: 'NONE', class: 'neutral' };
-                if (divergence.bullish) divergenceStatus = { text: 'BULLISH', class: 'bullish' };
-                if (divergence.bearish) divergenceStatus = { text: 'BEARISH', class: 'bearish' };
-                
-                if ([lK, pLK, lD, pLD].every(v => typeof v === 'number')) {
-                    const isCrossoverBuy = lK > lD && pLK <= pLD && lD < params.buyLevel;
-                    const isCrossoverSell = lK < lD && pLK >= pLD && lD > params.sellLevel;
-                    const useDivergence = document.getElementById('detect-divergence').checked;
-                    const isBuySignal = isCrossoverBuy || (useDivergence && divergence.bullish);
-                    const isSellSignal = isCrossoverSell || (useDivergence && divergence.bearish);
-                    
-                    if (lK > lD) ltfStatus = { text: 'BULLISH', class: 'bullish'};
-                    if (lK < lD) ltfStatus = { text: 'BEARISH', class: 'bearish'};
+                const now = Date.now();
+                const cooldown = 5 * 60 * 1000;
+                const inCooldown = now - lastMarkerTime < cooldown;
 
-                    let isHighConfirmation = false;
-                    if (isBuySignal && divergence.bullish && ltfStatus.text === 'BULLISH' && mtfContext.h4 === 'Bullish') {
-                        isHighConfirmation = true;
-                    }
-                    if (isSellSignal && divergence.bearish && ltfStatus.text === 'BEARISH' && mtfContext.h4 === 'Bearish') {
-                        isHighConfirmation = true;
-                    }
-
-                    const now = Date.now();
-                    const cooldown = 5 * 60 * 1000;
-                    const inCooldown = now - lastMarkerTime < cooldown;
-
-                    if ((isBuySignal || isSellSignal) && !liveSignalMarker) {
-                        if (inCooldown) {
-                            primary.text = isBuySignal 
-                                ? 'BUY signal forming, but in cooldown.' 
-                                : 'SELL signal forming, but in cooldown.';
-                            primary.class = isBuySignal ? 'verdict-buy' : 'verdict-sell';
-                        } else {
-                            let reason = "";
-                            let confidence = 50;
-                            if (isHighConfirmation) {
-                                reason = isBuySignal ? "High confirmation buy signal detected." : "High confirmation sell signal detected.";
-                                confidence = 90;
-                            } else {
-                                reason = isCrossoverBuy ? "StochRSI bullish crossover in oversold zone." : "StochRSI bearish crossover in overbought zone.";
-                                 if (isBuySignal && mtfContext.h4 === 'Bullish') confidence += 20;
-                                 if (isSellSignal && mtfContext.h4 === 'Bearish') confidence += 20;
-                            }
-
-                            const details = { type: isBuySignal ? 'BUY' : 'SELL', price: lastPrice, time: markerTime, confidence: confidence, reason: reason };
-
-                            if (isBuySignal) {
-                                liveSignalMarker = { time: markerTime, position: 'belowBar', color: LIVE_SIGNAL_COLOR, shape: 'arrowUp', text: `LIVE BUY @ ${lastPrice.toFixed(2)}`, size: 1.8, details: details };
-                                lastSignalFired = details;
-                            } else {
-                                liveSignalMarker = { time: markerTime, position: 'aboveBar', color: LIVE_SIGNAL_COLOR, shape: 'arrowDown', text: `LIVE SELL @ ${lastPrice.toFixed(2)}`, size: 1.8, details: details };
-                                lastSignalFired = details;
-                            }
-                            
-                            updateLastSignalUI();
-                            lastMarkerTime = now;
-                            startCooldownTimer();
-                            
-                            if(markerPersistenceTimeout) clearTimeout(markerPersistenceTimeout);
-                            markerPersistenceTimeout = setTimeout(() => {
-                                if (liveSignalMarker) {
-                                    const text = liveSignalMarker.text.replace('LIVE ', '');
-                                    const newMarker = { ...liveSignalMarker, text, color: SESSION_MARKER_COLOR, size: 1.5 };
-                                    if (!sessionMarkers.some(m => m.time === newMarker.time && m.details.type === newMarker.details.type)) {
-                                        sessionMarkers.push(newMarker);
-                                        localStorage.setItem('sessionMarkers', JSON.stringify(sessionMarkers));
-                                    }
-                                    liveSignalMarker = null;
-                                    rerenderAllMarkers();
-                                }
-                            }, 10000);
-                            
-                            rerenderAllMarkers();
-                            setTimeout(() => updateLatestData(false), 500);
-                            return;
-                        }
-                    } else if (inCooldown) {
-                         primary = { text: 'A signal was recently fired. Waiting for the market to react and for the cooldown to expire.', class: '' };
+                if ((isBuySignal || isSellSignal) && !liveSignalMarker) {
+                    if (inCooldown) {
+                        primary.text = isBuySignal 
+                            ? 'BUY signal forming, but in cooldown.' 
+                            : 'SELL signal forming, but in cooldown.';
+                        primary.class = isBuySignal ? 'verdict-buy' : 'verdict-sell';
                     } else {
-                        const isOverbought = lD > params.sellLevel;
-                        const isOversold = lD < params.buyLevel;
-                        const trends = [ltfStatus.text, mtfContext.m15, mtfContext.h4];
-                        const bullishTrends = trends.filter(t => t === 'Bullish').length;
-                        const bearishTrends = trends.filter(t => t === 'Bearish').length;
-
-                        if (bullishTrends >= 2 && isOverbought) {
-                            primary.text = "Trends are bullish, but momentum is overbought. Watching for a potential pullback or a sell signal.";
-                        } else if (bearishTrends >= 2 && isOversold) {
-                            primary.text = "Momentum is oversold within a bearish trend. Watching for a potential bounce or a buy signal.";
-                        } else if (bullishTrends >= 2) {
-                            primary.text = "Trends are mostly bullish. Watching for a crossover in the oversold zone for a buy entry.";
-                        } else if (bearishTrends >= 2) {
-                            primary.text = "Trends are mostly bearish. Watching for a crossover in the overbought zone for a sell entry.";
+                        let reason = "";
+                        let confidence = 50;
+                        if (isHighConfirmation) {
+                            reason = isBuySignal ? "High confirmation buy signal detected." : "High confirmation sell signal detected.";
+                            confidence = 90;
                         } else {
-                            primary.text = "Trends are mixed and momentum is neutral. Watching for a clear direction to emerge.";
+                            reason = isCrossoverBuy ? "StochRSI bullish crossover in oversold zone." : "StochRSI bearish crossover in overbought zone.";
+                             if (isBuySignal && mtfContext.h4 === 'Bullish') confidence += 20;
+                             if (isSellSignal && mtfContext.h4 === 'Bearish') confidence += 20;
                         }
-                    }
 
+                        const details = { type: isBuySignal ? 'BUY' : 'SELL', price: lastPrice, time: markerTime, confidence: confidence, reason: reason };
+
+                        if (isBuySignal) {
+                            liveSignalMarker = { time: markerTime, position: 'belowBar', color: LIVE_SIGNAL_COLOR, shape: 'arrowUp', text: `LIVE BUY @ ${lastPrice.toFixed(2)}`, size: 1.8, details: details };
+                            lastSignalFired = details;
+                        } else {
+                            liveSignalMarker = { time: markerTime, position: 'aboveBar', color: LIVE_SIGNAL_COLOR, shape: 'arrowDown', text: `LIVE SELL @ ${lastPrice.toFixed(2)}`, size: 1.8, details: details };
+                            lastSignalFired = details;
+                        }
+                        
+                        updateLastSignalUI();
+                        lastMarkerTime = now;
+                        startCooldownTimer();
+                        
+                        if(markerPersistenceTimeout) clearTimeout(markerPersistenceTimeout);
+                        markerPersistenceTimeout = setTimeout(() => {
+                            if (liveSignalMarker) {
+                                const text = liveSignalMarker.text.replace('LIVE ', '');
+                                const newMarker = { ...liveSignalMarker, text, color: SESSION_MARKER_COLOR, size: 1.5 };
+                                if (!sessionMarkers.some(m => m.time === newMarker.time && m.details.type === newMarker.details.type)) {
+                                    sessionMarkers.push(newMarker);
+                                    localStorage.setItem('sessionMarkers', JSON.stringify(sessionMarkers));
+                                }
+                                liveSignalMarker = null;
+                                rerenderAllMarkers();
+                            }
+                        }, 10000);
+                        
+                        rerenderAllMarkers();
+                        setTimeout(() => updateLatestData(false), 500);
+                        return;
+                    }
+                } else if (inCooldown) {
+                     primary = { text: 'A signal was recently fired. Waiting for the market to react and for the cooldown to expire.', class: '' };
                 } else {
-                     primary = { text: 'Initializing indicators...', class: '' };
+                    const isOverbought = lD > params.sellLevel;
+                    const isOversold = lD < params.buyLevel;
+                    const trends = [ltfStatus.text, mtfContext.m15, mtfContext.h4];
+                    const bullishTrends = trends.filter(t => t === 'Bullish').length;
+                    const bearishTrends = trends.filter(t => t === 'Bearish').length;
+
+                    if (bullishTrends >= 2 && isOverbought) {
+                        primary.text = "Trends are bullish, but momentum is overbought. Watching for a potential pullback or a sell signal.";
+                    } else if (bearishTrends >= 2 && isOversold) {
+                        primary.text = "Momentum is oversold within a bearish trend. Watching for a potential bounce or a buy signal.";
+                    } else if (bullishTrends >= 2) {
+                        primary.text = "Trends are mostly bullish. Watching for a crossover in the oversold zone for a buy entry.";
+                    } else if (bearishTrends >= 2) {
+                        primary.text = "Trends are mostly bearish. Watching for a crossover in the overbought zone for a sell entry.";
+                    } else {
+                        primary.text = "Trends are mixed and momentum is neutral. Watching for a clear direction to emerge.";
+                    }
                 }
 
-                const mtfStatus = { m15: { text: mtfContext.m15.toUpperCase(), class: mtfContext.m15.toLowerCase() }, h4: { text: mtfContext.h4.toUpperCase(), class: mtfContext.h4.toLowerCase() } };
-                primarySignalEl.innerHTML = primary.text;
-                primarySignalEl.className = 'analysis-verdict ' + primary.class;
-                detailsEl.innerHTML = `<div class="timeframe-status"><span class="tf-label">LTF Trend</span><span class="tf-verdict ${ltfStatus.class}">${ltfStatus.text}</span></div><div class="timeframe-status"><span class="tf-label">Divergence</span><span class="tf-verdict ${divergenceStatus.class}">${divergenceStatus.text}</span></div><div class="timeframe-status"><span class="tf-label">15m Trend</span><span class="tf-verdict ${mtfStatus.m15.class}">${mtfStatus.m15.text}</span></div><div class="timeframe-status"><span class="tf-label">4h Trend</span><span class="tf-verdict ${mtfStatus.h4.class}">${mtfStatus.h4.text}</span></div>`;
-            });
+            } else {
+                 primary = { text: 'Initializing indicators...', class: '' };
+            }
+
+            const mtfStatus = { m15: { text: mtfContext.m15.toUpperCase(), class: mtfContext.m15.toLowerCase() }, h4: { text: mtfContext.h4.toUpperCase(), class: mtfContext.h4.toLowerCase() } };
+            primarySignalEl.innerHTML = primary.text;
+            primarySignalEl.className = 'analysis-verdict ' + primary.class;
+            detailsEl.innerHTML = `<div class="timeframe-status"><span class="tf-label">LTF Trend</span><span class="tf-verdict ${ltfStatus.class}">${ltfStatus.text}</span></div><div class="timeframe-status"><span class="tf-label">Divergence</span><span class="tf-verdict ${divergenceStatus.class}">${divergenceStatus.text}</span></div><div class="timeframe-status"><span class="tf-label">15m Trend</span><span class="tf-verdict ${mtfStatus.m15.class}">${mtfStatus.m15.text}</span></div><div class="timeframe-status"><span class="tf-label">4h Trend</span><span class="tf-verdict ${mtfStatus.h4.class}">${mtfStatus.h4.text}</span></div>`;
         }
         function rerenderAllMarkers() { if (!fullChartData || fullChartData.length === 0) return; const showAlgo = document.getElementById('show-algo-signals').checked; const showSession = document.getElementById('show-session-markers').checked; let markersToDisplay = []; if (showAlgo) markersToDisplay.push(...algoMarkers); if (showSession) markersToDisplay.push(...sessionMarkers); if (liveSignalMarker) { markersToDisplay.push(liveSignalMarker); } candlestickSeries.setMarkers(markersToDisplay.sort((a,b) => a.time - b.time)); }
         
@@ -906,10 +899,6 @@
         
         // --- INITIAL LOAD ---
         document.addEventListener('DOMContentLoaded', () => {
-            const sidebar = document.querySelector('.sidebar');
-            const mobileControls = document.querySelector('.mobile-controls-wrapper');
-            mobileControls.innerHTML = sidebar.innerHTML;
-
             const computedStyles = getComputedStyle(document.documentElement);
             LIVE_SIGNAL_COLOR = computedStyles.getPropertyValue('--live-signal-color').trim();
             SESSION_MARKER_COLOR = computedStyles.getPropertyValue('--session-marker-color').trim();
@@ -923,7 +912,8 @@
             });
 
             if (window.innerWidth <= 768) {
-                mobileControls.querySelectorAll('.collapsible-header').forEach(header => {
+                document.querySelectorAll('.sidebar [data-panel]').forEach(panel => {
+                    const header = panel.querySelector('.collapsible-header');
                     const title = header.textContent.trim();
                     if (title !== 'Live Signal Analysis') {
                         header.classList.add('collapsed');
