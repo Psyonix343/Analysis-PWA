@@ -2,13 +2,19 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Pro Crypto Analysis & Signal Tool</title>
     
     <!-- PWA Manifest and Theme Color -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#1e222d">
     <link rel="apple-touch-icon" href="https://placehold.co/192x192/1e222d/ffffff?text=Icon">
+
+    <!-- iOS Specific Meta Tags for Fullscreen App Experience -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Crypto Tool">
+
 
     <script src="https://unpkg.com/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
     <style>
@@ -228,15 +234,17 @@
                 height: auto;
             }
             .sidebar {
+                order: 2; /* This moves the sidebar below the chart wrapper */
                 width: 100%;
                 border-right: none;
-                border-bottom: 1px solid var(--border-color);
+                border-top: 1px solid var(--border-color);
                 box-sizing: border-box;
                 overflow-y: visible;
                 height: auto;
                 padding: 10px;
             }
             .chart-wrapper {
+                order: 1; /* This keeps the chart wrapper on top */
                 height: 60vh;
                 min-height: 400px;
             }
@@ -899,6 +907,8 @@
         
         // --- INITIAL LOAD ---
         document.addEventListener('DOMContentLoaded', () => {
+            const sidebar = document.querySelector('.sidebar');
+
             const computedStyles = getComputedStyle(document.documentElement);
             LIVE_SIGNAL_COLOR = computedStyles.getPropertyValue('--live-signal-color').trim();
             SESSION_MARKER_COLOR = computedStyles.getPropertyValue('--session-marker-color').trim();
